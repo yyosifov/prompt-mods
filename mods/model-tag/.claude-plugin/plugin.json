@@ -1,0 +1,17 @@
+{
+  "name": "model-tag",
+  "version": "0.1.0",
+  "description": "Pick the model per message: put @haiku, @opus or @sonnet anywhere in a prompt and that one turn runs on it",
+  "author": {
+    "name": "yyosifov",
+    "url": "https://github.com/yyosifov"
+  },
+  "homepage": "https://github.com/yyosifov/prompt-mods/tree/main/mods/model-tag",
+  "repository": "https://github.com/yyosifov/prompt-mods",
+  "license": "MIT",
+  "keywords": [
+    "model",
+    "prompt",
+    "mod"
+  ]
+}

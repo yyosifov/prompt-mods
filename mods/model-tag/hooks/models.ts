@@ -1,0 +1,21 @@
+// `turn.step` sends the model string to the API as written, so short names
+// are mapped to full ids here. Update when new models ship.
+export const MODELS: Readonly<Record<string, string>> = {
+  opus: 'claude-opus-5-5',
+  sonnet: 'claude-sonnet-5-5',
+  haiku: 'claude-haiku-4-5-20251001',
+  fable: 'claude-fable-5-1',
+}
+
+export const PICKER_OPTIONS = Object.keys(MODELS)
+
+const LONG_CONTEXT = '[1m]'
+
+// A full id for a known name or a `claude-*` id, null for anything else.
+export const resolveModel = (name: string): string | null => {
+  const isLong = name.endsWith(LONG_CONTEXT)
+  const base = isLong ? name.slice(0, -LONG_CONTEXT.length) : name
+  const id = MODELS[base] ?? (base.startsWith('claude-') ? base : null)
+
+  return id === null ? null : id + (isLong ? LONG_CONTEXT : '')
+}

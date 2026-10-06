@@ -1,0 +1,14 @@
+{
+  "name": "prompt-mods",
+  "owner": { "name": "yyosifov", "url": "https://github.com/yyosifov" },
+  "metadata": {
+    "description": "Small, finished Claude Code mods for the prompt box"
+  },
+  "plugins": [
+    {
+      "name": "model-tag",
+      "source": "./mods/model-tag",
+      "description": "Pick the model per message: write @haiku, @sonnet or @opus anywhere in a prompt and that one turn runs on it"
+    }
+  ]
+}
