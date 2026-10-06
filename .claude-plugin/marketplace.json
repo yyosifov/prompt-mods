@@ -1,6 +1,9 @@
 {
   "name": "prompt-mods",
-  "owner": { "name": "yyosifov", "url": "https://github.com/yyosifov" },
+  "owner": {
+    "name": "yyosifov",
+    "url": "https://github.com/yyosifov"
+  },
   "metadata": {
     "description": "Small, finished Claude Code mods for the prompt box"
   },
@@ -9,6 +12,11 @@
       "name": "model-tag",
       "source": "./mods/model-tag",
       "description": "Pick the model per message: write @haiku, @sonnet or @opus anywhere in a prompt and that one turn runs on it"
+    },
+    {
+      "name": "ask-threads",
+      "source": "./mods/ask-threads",
+      "description": "/ask: side questions you can list, reopen, continue, and send to the main conversation"
     }
   ]
 }

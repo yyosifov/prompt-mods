@@ -1,0 +1,20 @@
+{
+  "name": "ask-threads",
+  "version": "0.1.0",
+  "description": "/ask: side questions you can list, reopen, continue, and send to the main conversation",
+  "author": {
+    "name": "yyosifov",
+    "url": "https://github.com/yyosifov"
+  },
+  "homepage": "https://github.com/yyosifov/prompt-mods/tree/main/mods/ask-threads",
+  "repository": "https://github.com/yyosifov/prompt-mods",
+  "license": "MIT",
+  "keywords": [
+    "ask",
+    "btw",
+    "side question",
+    "prompt",
+    "mod"
+  ],
+  "types": "./types/index.d.ts"
+}

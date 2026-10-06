@@ -5,6 +5,7 @@ Small, finished [Claude Code mods](https://github.com/anthropics/claude-code/tre
 | Mod | What it does |
 | --- | --- |
 | [model-tag](mods/model-tag) | Write `@haiku` in a message and that one turn runs on Haiku. No `/model`, no retyping. |
+| [ask-threads](mods/ask-threads) | `/ask` side questions that you can list, reopen, continue, and send to the main conversation. |
 
 ## Install
 
@@ -12,6 +13,7 @@ In a Claude Code terminal session:
 
 ```
 /plugin install model-tag --marketplace yyosifov/prompt-mods
+/plugin install ask-threads --marketplace yyosifov/prompt-mods
 ```
 
 Answer `y` to add the marketplace, then pick a scope (user scope = every session). The mod is active right away.
@@ -19,9 +21,9 @@ Answer `y` to add the marketplace, then pick a scope (user scope = every session
 ## Develop
 
 ```sh
-claude plugin validate mods/model-tag
-claude plugin test mods/model-tag
-claude --plugin-dir mods/model-tag   # run a session with your local copy
+claude plugin validate mods/<mod>
+claude plugin test mods/<mod>
+claude --plugin-dir mods/<mod>   # run a session with your local copy
 ```
 
 ## License
