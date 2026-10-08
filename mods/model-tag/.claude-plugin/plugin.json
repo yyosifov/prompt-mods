@@ -1,6 +1,6 @@
 {
   "name": "model-tag",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Per-message model and effort: put @haiku or @max anywhere in a prompt and that one turn runs on it",
   "author": {
     "name": "yyosifov",
@@ -9,10 +9,5 @@
   "homepage": "https://github.com/yyosifov/prompt-mods/tree/main/mods/model-tag",
   "repository": "https://github.com/yyosifov/prompt-mods",
   "license": "MIT",
-  "keywords": [
-    "model",
-    "effort",
-    "prompt",
-    "mod"
-  ]
+  "keywords": ["model", "effort", "prompt", "mod"]
 }

@@ -1,119 +1,120 @@
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code';
 
-import { EFFORT_PICKER, type Effort, isEffort } from './efforts'
-import { PICKER_OPTIONS, resolveModel, shortName } from './models'
-import { closestName, parseTags } from './parse'
+import { EFFORT_PICKER, type Effort, isEffort } from './efforts';
+import { PICKER_OPTIONS, resolveModel, shortName } from './models';
+import { closestName, parseTags } from './parse';
 
 // What one tagged message asks for; a field left out keeps the session's.
-type Choice = { model?: { name: string; id: string }; effort?: Effort }
+type Choice = { model?: { name: string; id: string }; effort?: Effort };
 
-// Asks which one was meant when a tag names nothing known; null when dismissed.
 async function pick($: EngineInterface, word: string, kind: 'model' | 'effort'): Promise<string | null> {
-  const guess = closestName(word)?.name
-  const all = kind === 'model' ? PICKER_OPTIONS : EFFORT_PICKER
-  const options = guess !== undefined && all.includes(guess) ? [guess, ...all.filter(o => o !== guess)] : all
+  const guess = closestName(word)?.name;
+  const all = kind === 'model' ? PICKER_OPTIONS : EFFORT_PICKER;
+  const options = guess !== undefined && all.includes(guess) ? [guess, ...all.filter((o) => o !== guess)] : all;
   try {
     const answer = await $.ui.ask(`No ${kind} called "${word}". Which one should this message use?`, {
       header: kind === 'model' ? 'Model' : 'Effort',
       options,
-    })
-    return answer.toLowerCase()
+    });
+    return answer.toLowerCase();
   } catch {
-    return null
+    return null;
   }
 }
 
-const label = (model: string, effort: string | number | undefined): string =>
-  effort === undefined ? model : `${model} · ${effort}`
+const label = (model: string, effort: string | number | undefined): string => (effort === undefined ? model : `${model} · ${effort}`);
 
-export const register: Register = on => {
-  // Choices asked for by prompts whose turn has not started yet, oldest first.
-  const pending: Choice[] = []
-  // The choice each tagged turn runs with, by turn id.
-  const byTurn = new Map<string, Choice>()
+export const register: Register = (on) => {
+  const pending: Choice[] = [];
+  const byTurn = new Map<string, Choice>();
 
   // A reload must not leave a line from an earlier load pinned.
   on('session.start', ($, e, next) => {
-    $.ui.status(undefined)
-    return next(e)
-  })
+    $.ui.status(undefined);
+    return next(e);
+  });
 
   on('prompt.submit', async ($, e, next) => {
-    const tags = parseTags(e.text)
+    const tags = parseTags(e.text);
     if (tags === null) {
-      return next(e)
+      return next(e);
     }
 
     if (tags.text === '') {
-      return { drop: 'A model or effort tag needs a message to go with it' }
+      return { drop: 'A model or effort tag needs a message to go with it' };
     }
 
-    const choice: Choice = {}
+    const choice: Choice = {};
     if (tags.model !== undefined) {
-      let name = tags.model
-      let id = resolveModel(name)
+      let name = tags.model;
+      let id = resolveModel(name);
       if (id === null) {
-        name = (await pick($, tags.model, 'model')) ?? ''
-        id = resolveModel(name)
+        name = (await pick($, tags.model, 'model')) ?? '';
+        id = resolveModel(name);
       }
       if (id === null) {
-        return { drop: `No model called "${tags.model}"; the message was not sent` }
+        return { drop: `No model called "${tags.model}"; the message was not sent` };
       }
-      choice.model = { name, id }
+      choice.model = { name, id };
     }
     if (tags.effort !== undefined) {
-      const effort = isEffort(tags.effort) ? tags.effort : await pick($, tags.effort, 'effort')
-      if (effort === null || !isEffort(effort)) {
-        return { drop: `No effort called "${tags.effort}"; the message was not sent` }
+      let effort: string | null = tags.effort;
+
+      if (!isEffort(effort)) {
+        effort = await pick($, tags.effort, 'effort');
       }
-      choice.effort = effort
+      if (effort === null || !isEffort(effort)) {
+        return { drop: `No effort called "${tags.effort}"; the message was not sent` };
+      }
+      choice.effort = effort;
     }
 
     if (e.turnId !== undefined) {
       // Delivered into the running turn: its remaining steps take the choice.
-      byTurn.set(e.turnId, choice)
+      byTurn.set(e.turnId, choice);
     } else {
-      pending.push(choice)
+      pending.push(choice);
     }
 
-    const what = [choice.model && `${choice.model.name} (${choice.model.id})`, choice.effort && `${choice.effort} effort`]
-    $.ui.log(`▸ This message runs on ${what.filter(Boolean).join(', ')}`)
+    const what = [choice.model && `${choice.model.name} (${choice.model.id})`, choice.effort && `${choice.effort} effort`];
+    $.ui.log(`▸ This message runs on ${what.filter(Boolean).join(', ')}`);
 
-    return next({ ...e, text: tags.text })
-  })
+    return next({ ...e, text: tags.text });
+  });
 
   on('turn.start', ($, e, next) => {
-    const choice = pending.shift()
+    const choice = pending.shift();
     if (choice !== undefined) {
-      byTurn.set(e.turnId, choice)
+      byTurn.set(e.turnId, choice);
     }
 
-    return next(e)
-  })
+    return next(e);
+  });
 
   on('turn.step', async function* ($, e, next) {
     // Subagents keep the model they were given.
-    if (e.agentId !== undefined) {
-      return yield* next(e)
+    const isSubagent = e.agentId !== undefined;
+    if (isSubagent) {
+      return yield* next(e);
     }
 
-    const choice = byTurn.get(e.turnId)
+    const choice = byTurn.get(e.turnId);
     if (choice === undefined) {
-      return yield* next(e)
+      return yield* next(e);
     }
 
-    const model = choice.model?.id ?? e.model
-    const effort = choice.effort ?? e.effort
-    $.ui.status(`▸ ${label(shortName(model), effort)} (this turn)`)
+    const model = choice.model?.id ?? e.model;
+    const effort = choice.effort ?? e.effort;
+    $.ui.status(`▸ ${label(shortName(model), effort)} (this turn)`);
 
-    return yield* next({ ...e, model, ...(effort === undefined ? {} : { effort }) })
-  })
+    return yield* next({ ...e, model, ...(effort === undefined ? {} : { effort }) });
+  });
 
   on('turn.complete', ($, e, next) => {
     if (e.agentId === undefined && byTurn.delete(e.turnId)) {
-      $.ui.status(undefined)
+      $.ui.status(undefined);
     }
 
-    return next(e)
-  })
-}
+    return next(e);
+  });
+};

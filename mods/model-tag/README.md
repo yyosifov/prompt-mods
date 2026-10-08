@@ -18,7 +18,7 @@ No tags, no change: the mod does nothing until a message carries a tag. While a 
 | --- | --- |
 | `@opus` | `claude-opus-5-5` |
 | `@sonnet` | `claude-sonnet-5-5` |
-| `@haiku` | `claude-haiku-4-5-20251001` |
+| `@haiku` | `claude-haiku-5-5` |
 | `@fable` | `claude-fable-5-1` |
 | `@claude-…` | any full model id, as written |
 | `::anything` | any model string, as written |
