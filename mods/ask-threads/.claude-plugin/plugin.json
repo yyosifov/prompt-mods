@@ -9,12 +9,6 @@
   "homepage": "https://github.com/yyosifov/prompt-mods/tree/main/mods/ask-threads",
   "repository": "https://github.com/yyosifov/prompt-mods",
   "license": "MIT",
-  "keywords": [
-    "ask",
-    "btw",
-    "side question",
-    "prompt",
-    "mod"
-  ],
+  "keywords": ["ask", "btw", "side question", "prompt", "mod"],
   "types": "./types/index.d.ts"
 }

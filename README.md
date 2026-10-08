@@ -23,6 +23,7 @@ Answer `y` to add the marketplace, then pick a scope (user scope = every session
 ## Develop
 
 ```sh
+bun install && bun run lint   # Biome: format and lint, see AGENTS.md
 claude plugin validate mods/<mod>
 claude plugin test mods/<mod>
 claude --plugin-dir mods/<mod>   # run a session with your local copy
