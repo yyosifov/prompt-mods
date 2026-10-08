@@ -1,7 +1,9 @@
+import type { On } from 'claude-code'
 import { describe, expect, test } from 'claude-code/testing'
+import type { Engine } from 'claude-code/testing'
 
-import { resolveModel } from '../hooks/models'
-import { closestName, parseTag } from '../hooks/parse'
+import { resolveModel, shortName } from '../hooks/models'
+import { closestName, parseTags } from '../hooks/parse'
 
 describe('resolveModel', () => {
   test('maps short names to full ids and passes claude ids through', () => {
@@ -10,123 +12,118 @@ describe('resolveModel', () => {
     expect(resolveModel('claude-sonnet-5-5')).toBe('claude-sonnet-5-5')
     expect(resolveModel('hiaku')).toBe(null)
   })
+
+  test('shortName reads an id back as its name', () => {
+    expect(shortName('claude-haiku-4-5-20251001')).toBe('haiku')
+    expect(shortName('claude-opus-5-5[1m]')).toBe('opus[1m]')
+    expect(shortName('claude-sonnet-4-5-20250929')).toBe('sonnet-4-5')
+  })
 })
 
-describe('parseTag', () => {
-  test('finds a tag at the start, middle or end and strips it', () => {
-    expect(parseTag('::haiku summarize this')).toEqual({ model: 'haiku', text: 'summarize this' })
-    expect(parseTag('summarize ::Opus this')).toEqual({ model: 'opus', text: 'summarize this' })
-    expect(parseTag('summarize this\n::claude-sonnet-5-5')).toEqual({
-      model: 'claude-sonnet-5-5',
-      text: 'summarize this',
-    })
+describe('parseTags', () => {
+  test('finds a model tag at the start, middle or end and strips it', () => {
+    expect(parseTags('@haiku summarize this')).toEqual({ model: 'haiku', text: 'summarize this' })
+    expect(parseTags('summarize @Opus this')).toEqual({ model: 'opus', text: 'summarize this' })
+    expect(parseTags('fix it @claude-opus-5-5')).toEqual({ model: 'claude-opus-5-5', text: 'fix it' })
+    expect(parseTags('summarize this\n::claude-sonnet-5-5')).toEqual({ model: 'claude-sonnet-5-5', text: 'summarize this' })
   })
 
-  test('takes @ for model names only', () => {
-    expect(parseTag('@haiku summarize this')).toEqual({ model: 'haiku', text: 'summarize this' })
-    expect(parseTag('fix it @claude-opus-5-5')).toEqual({ model: 'claude-opus-5-5', text: 'fix it' })
-    expect(parseTag('read @src/app.ts')).toBe(null)
-    expect(parseTag('ask @agent-reviewer')).toBe(null)
-    expect(parseTag('mail me@opus.dev')).toBe(null)
-    expect(parseTag('see @haiku.md')).toBe(null)
-    expect(parseTag('see @README.md')).toBe(null)
+  test('finds effort tags alone and next to a model tag', () => {
+    expect(parseTags('@max find the race')).toEqual({ effort: 'max', text: 'find the race' })
+    expect(parseTags('@haiku @low quick one')).toEqual({ model: 'haiku', effort: 'low', text: 'quick one' })
+    expect(parseTags('tricky bug @opus @xhigh')).toEqual({ model: 'opus', effort: 'xhigh', text: 'tricky bug' })
   })
 
-  test('takes @ for near misses of a model name, so the picker can catch them', () => {
-    expect(parseTag('2+2 @hiaku')).toEqual({ model: 'hiaku', text: '2+2' })
-    expect(parseTag('@sonet go')).toEqual({ model: 'sonet', text: 'go' })
-    expect(closestName('hiaku')).toBe('haiku')
+  test('takes near misses so the picker can catch them', () => {
+    expect(parseTags('2+2 @hiaku')).toEqual({ model: 'hiaku', text: '2+2' })
+    expect(parseTags('go @hihg')).toEqual({ effort: 'hihg', text: 'go' })
+    expect(closestName('hiaku')).toEqual({ name: 'haiku', kind: 'model' })
+    expect(closestName('meduim')).toEqual({ name: 'medium', kind: 'effort' })
     expect(closestName('package')).toBe(null)
   })
 
-  test('leaves text without a standalone tag alone', () => {
-    expect(parseTag('call Foo::bar() please')).toBe(null)
-    expect(parseTag('no tag here')).toBe(null)
-    expect(parseTag(':: haiku')).toBe(null)
+  test('leaves mentions, code and plain text alone', () => {
+    expect(parseTags('read @src/app.ts')).toBe(null)
+    expect(parseTags('ask @agent-reviewer')).toBe(null)
+    expect(parseTags('mail me@opus.dev')).toBe(null)
+    expect(parseTags('see @haiku.md')).toBe(null)
+    expect(parseTags('see @README.md')).toBe(null)
+    expect(parseTags('ping @me')).toBe(null)
+    expect(parseTags('call Foo::bar() please')).toBe(null)
+    expect(parseTags('no tag here')).toBe(null)
   })
 })
 
 const composer = { kind: 'composer' } as const
+const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }
 
-test('a tagged prompt runs its turn on the tagged model, the next one does not', async ($, on) => {
-  const sent: string[] = []
-  const models: string[] = []
+type Step = { model: string; effort?: unknown }
 
-  on('prompt.submit', ($, e) => {
-    sent.push(e.text)
-    return { text: e.text }
-  })
+// Stands in for the engine beneath the plugin: records each main request.
+const engine = ($: Engine, on: On, steps: Step[]) => {
+  on('prompt.submit', ($, e) => ({ text: e.text }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.step', async function* ($, e) {
-    models.push(e.model)
+    steps.push({ model: e.model, effort: e.effort })
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null }
   })
   on('turn.complete', () => ({ text: '' }))
 
-  const step = async (turnId: string) => {
+  return async (turnId: string, agentId?: string) => {
     await $.turn.start({ turnId, text: '' })
-    const stream = $.turn.step({ turnId, index: 0, model: 'session-model', messageCount: 1 })
-    for await (const _ of stream) {
-      // drain
+    const step = { turnId, index: 0, model: 'claude-opus-5-5', effort: 'high' as const, messageCount: 1 }
+    for await (const _ of $.turn.step(agentId === undefined ? step : { ...step, agentId })) {
     }
-    await $.turn.complete({ turnId, answer: '', durationMs: 1, isAborted: false, reason: 'answer' })
+    await $.turn.complete({ turnId, answer: '', durationMs: 1, isAborted: false, reason: 'answer', usage: { ...usage, model: 'm' } } as never)
   }
+}
 
-  await $.prompt.submit({ text: 'explain @haiku this', wait: false, origin: composer })
-  await step('t1')
+test('a tagged prompt runs its turn on the tagged model and effort, the next one does not', async ($, on) => {
+  const steps: Step[] = []
+  const turn = engine($, on, steps)
+
+  await $.prompt.submit({ text: 'explain @haiku @low this', wait: false, origin: composer })
+  await turn('t1')
   await $.prompt.submit({ text: 'and now this', wait: false, origin: composer })
-  await step('t2')
+  await turn('t2')
 
-  expect(sent).toEqual(['explain this', 'and now this'])
-  expect(models).toEqual(['claude-haiku-4-5-20251001', 'session-model'])
+  expect(steps).toEqual([
+    { model: 'claude-haiku-4-5-20251001', effort: 'low' },
+    { model: 'claude-opus-5-5', effort: 'high' },
+  ])
+})
+
+test('an effort tag alone keeps the session model', async ($, on) => {
+  const steps: Step[] = []
+  const turn = engine($, on, steps)
+
+  await $.prompt.submit({ text: '@max think hard', wait: false, origin: composer })
+  await turn('t1')
+
+  expect(steps).toEqual([{ model: 'claude-opus-5-5', effort: 'max' }])
 })
 
 test('a subagent inside a tagged turn keeps its own model', async ($, on) => {
-  const models: string[] = []
-  on('prompt.submit', ($, e) => ({ text: e.text }))
-  on('turn.start', ($, e) => ({ turnId: e.turnId }))
-  on('turn.step', async function* ($, e) {
-    models.push(e.model)
-    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null }
-  })
+  const steps: Step[] = []
+  const turn = engine($, on, steps)
 
-  await $.prompt.submit({ text: '::opus go', wait: false, origin: composer })
-  await $.turn.start({ turnId: 't1', text: '' })
-  for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'm', messageCount: 1, agentId: 'a1' })) {
-  }
+  await $.prompt.submit({ text: '@haiku go', wait: false, origin: composer })
+  await turn('t1', 'a1')
 
-  expect(models).toEqual(['m'])
-})
-
-test('a tag with no message is refused', async ($, on) => {
-  on('prompt.submit', ($, e) => ({ text: e.text }))
-
-  const result = await $.prompt.submit({ text: '  ::haiku  ', wait: false, origin: composer })
-
-  expect(result.drop).toBe('@haiku needs a message to go with it')
+  expect(steps).toEqual([{ model: 'claude-opus-5-5', effort: 'high' }])
 })
 
 test('an unknown model asks which one to use', async ($, on) => {
-  const models: string[] = []
-  on('prompt.submit', ($, e) => ({ text: e.text }))
-  on('turn.start', ($, e) => ({ turnId: e.turnId }))
-  on('turn.step', async function* ($, e) {
-    models.push(e.model)
-    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null }
-  })
+  const steps: Step[] = []
+  const turn = engine($, on, steps)
   on('tool.call', { tool: 'AskUserQuestion' }, ($, e) => ({
-    result: {
-      questions: e.questions,
-      answers: { 'No model called "hiaku". Which one should this message use?': 'sonnet' },
-    },
+    result: { questions: e.questions, answers: { 'No model called "hiaku". Which one should this message use?': 'sonnet' } },
   }))
 
   await $.prompt.submit({ text: 'hi @hiaku', wait: false, origin: composer })
-  await $.turn.start({ turnId: 't1', text: '' })
-  for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'm', messageCount: 1 })) {
-  }
+  await turn('t1')
 
-  expect(models).toEqual(['claude-sonnet-5-5'])
+  expect(steps).toEqual([{ model: 'claude-sonnet-5-5', effort: 'high' }])
 })
 
 test('a dismissed picker keeps the message unsent', async ($, on) => {
@@ -136,4 +133,12 @@ test('a dismissed picker keeps the message unsent', async ($, on) => {
   const result = await $.prompt.submit({ text: 'hi @hiaku', wait: false, origin: composer })
 
   expect(result.drop).toBe('No model called "hiaku"; the message was not sent')
+})
+
+test('a tag with no message is refused', async ($, on) => {
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+
+  const result = await $.prompt.submit({ text: '  @haiku @low ', wait: false, origin: composer })
+
+  expect(result.drop).toBe('A model or effort tag needs a message to go with it')
 })

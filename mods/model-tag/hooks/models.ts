@@ -19,3 +19,13 @@ export const resolveModel = (name: string): string | null => {
 
   return id === null ? null : id + (isLong ? LONG_CONTEXT : '')
 }
+
+// A short name for an id the API reports: `claude-opus-5-5` reads `opus`.
+export const shortName = (id: string): string => {
+  const isLong = id.endsWith(LONG_CONTEXT)
+  const base = isLong ? id.slice(0, -LONG_CONTEXT.length) : id
+  const known = Object.entries(MODELS).find(([, full]) => full === base)?.[0]
+  const name = known ?? base.replace(/^claude-/, '').replace(/-\d{8}$/, '')
+
+  return name + (isLong ? LONG_CONTEXT : '')
+}
