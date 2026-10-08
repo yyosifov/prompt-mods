@@ -1,0 +1,11 @@
+{
+  "name": "stash-stack",
+  "version": "0.1.0",
+  "description": "git stash for your prompt: every draft you wipe without sending is kept, /stash pop brings it back",
+  "author": { "name": "yyosifov", "url": "https://github.com/yyosifov" },
+  "homepage": "https://github.com/yyosifov/prompt-mods/tree/main/mods/stash-stack",
+  "repository": "https://github.com/yyosifov/prompt-mods",
+  "license": "MIT",
+  "keywords": ["stash", "draft", "prompt", "mod"],
+  "types": "./types/index.d.ts"
+}

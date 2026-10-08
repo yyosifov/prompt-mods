@@ -11,12 +11,17 @@
     {
       "name": "model-tag",
       "source": "./mods/model-tag",
-      "description": "Pick the model per message: write @haiku, @sonnet or @opus anywhere in a prompt and that one turn runs on it"
+      "description": "Per-message model and effort: write @haiku or @max in a prompt and that one turn runs on it"
     },
     {
       "name": "ask-threads",
       "source": "./mods/ask-threads",
       "description": "/ask: side questions you can list, reopen, continue, and send to the main conversation"
+    },
+    {
+      "name": "stash-stack",
+      "source": "./mods/stash-stack",
+      "description": "git stash for your prompt: wiped drafts are kept, /stash pop brings them back"
     }
   ]
 }
