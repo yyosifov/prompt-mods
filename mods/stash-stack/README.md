@@ -6,6 +6,14 @@
 /stash pop
 ```
 
+Or end a message with `/stash` to stash it instead of sending it:
+
+```
+refactor the auth middleware to use the new token cache /stash
+```
+
+Only the last word counts, so a message that mentions `/stash` is sent as written.
+
 A toast confirms each stash. Short drafts (under 15 characters) and drafts you send are not kept.
 
 ## Commands
@@ -25,6 +33,14 @@ A toast confirms each stash. Short drafts (under 15 characters) and drafts you s
 ```
 /plugin install stash-stack --marketplace yyosifov/prompt-mods
 ```
+
+## Settings
+
+| Setting | Default | Does |
+| --- | --- | --- |
+| `showStatus` | on | Shows `stash: N · /stash` in the status line while the stash holds anything |
+
+Change it from the plugin's config menu in `/plugin`.
 
 ## Notes
 
