@@ -10,7 +10,15 @@ Small, finished [Claude Code mods](https://github.com/anthropics/claude-code/tre
 
 ## Install
 
-In a Claude Code terminal session:
+All three, from your shell:
+
+```sh
+for mod in model-tag ask-threads stash-stack; do
+  claude plugin install "$mod" --marketplace yyosifov/prompt-mods
+done
+```
+
+Or one at a time, in a Claude Code session:
 
 ```
 /plugin install model-tag --marketplace yyosifov/prompt-mods
@@ -18,7 +26,7 @@ In a Claude Code terminal session:
 /plugin install stash-stack --marketplace yyosifov/prompt-mods
 ```
 
-Answer `y` to add the marketplace, then pick a scope (user scope = every session). The mod is active right away.
+Answer `y` to add the marketplace, then pick a scope (user scope = every session). The mod is active right away. Mods installed from the shell load in your next Claude Code session, or after `/reload-plugins`.
 
 ## Develop
 
