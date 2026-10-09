@@ -1,6 +1,6 @@
 {
   "name": "stash-stack",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "git stash for your prompt: every draft you wipe without sending is kept, /stash pop brings it back",
   "author": {
     "name": "yyosifov",

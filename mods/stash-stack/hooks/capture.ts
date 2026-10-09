@@ -24,8 +24,16 @@ export const wiped = (before: string, after: string): string | null =>
 
 // The draft to keep when the box no longer holds what it last held, with no
 // edit of ours in between (Ctrl+S, Ctrl+C, a clear the editor did itself).
-export const vanished = (last: string, now: string): string | null =>
-  isWorthKeeping(last) && now !== last && !now.includes(last.trim()) ? last : null;
+// A slash command clears the box when it runs without passing prompt.submit,
+// so one that vanishes was run, not lost.
+export const vanished = (last: string, now: string): string | null => {
+  const isCommand = last.trimStart().startsWith('/');
+  if (isCommand) {
+    return null;
+  }
+
+  return isWorthKeeping(last) && now !== last && !now.includes(last.trim()) ? last : null;
+};
 
 export const push = <T extends { text: string }>(stack: readonly T[], entry: T): T[] => {
   const isAlreadyNewest = stack[0]?.text === entry.text;

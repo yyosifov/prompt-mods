@@ -26,6 +26,8 @@ describe('capture rules', () => {
     expect(vanished(DRAFT, DRAFT)).toBe(null);
     expect(vanished(DRAFT, `${DRAFT} more`)).toBe(null);
     expect(vanished('', 'x')).toBe(null);
+    expect(vanished('/plugin install model-tag --marketplace yyosifov/prompt-mods', '')).toBe(null);
+    expect(wiped('/ask why is the sky blue at noon?', '')).toBe('/ask why is the sky blue at noon?');
   });
 
   test('the stack is newest first and keeps one copy of a draft', () => {
